@@ -1,0 +1,447 @@
+---
+title: "Fantastic Graph Types"
+author: "Mark Williamson"
+output: html_notebook
+---
+
+#Getting packages in
+```{r packages-in}
+#formatting
+library(dplyr) 
+library(tidyr)
+
+#datasets
+library(datasets)
+library(ape)
+library(Stat2Data)
+library(MASS)
+
+#graphs
+library(ggplot2)
+library(pheatmap)
+library(survival)
+library(ggsurvfit)
+library(treemapify)
+library(ggalt)
+library(waffle)
+library(meta)
+```
+***
+
+#Violin Plots
+```{r violins}
+
+#basic
+head(iris)
+
+p1A <- ggplot(data=iris, aes(y=Sepal.Length, x=Species, fill=Species))+
+  geom_violin()
+p1A
+
+#----------------
+
+#exciting
+head(diamonds)
+
+p1B <- ggplot(data=diamonds, aes(y=carat, x=cut, fill=cut))+
+  geom_violin()+
+  scale_fill_manual(values=c("yellow","green","#CD7F32","#C0C0C0","#D4AF37")) 
+p1B
+```
+***
+
+#Dumbbell plots
+```{r dumbbells}
+
+#basic
+table(mpg$trans, mpg$year) #pull only 'auto(l4)' transmission
+
+mpg2 <- mpg[mpg$trans=='auto(l4)',] %>% 
+  dplyr::select(hwy, year, model) 
+
+mpg2_year <- mpg2 %>% 
+  pivot_wider(
+    names_from  =year,
+    values_from =hwy,
+    id_cols = c(model),
+    values_fn = function(x) mean(x, na.rm=TRUE),
+    names_prefix ="year_") %>% 
+  drop_na()
+
+p2A <- ggplot(data=mpg2_year, aes(x=year_1999, xend=year_2008, y=model, group=model))+
+  geom_dumbbell(colour="lightblue", colour_xend ="blue", size=4, dot_guide = TRUE, dot_guide_size = 0.15, dot_guide_colour = "grey")+
+  labs(x="Highway fuel economy, MPG")
+p2A
+
+#----------------
+
+#exciting
+Radon  <-data.frame(Group       =c('1','2','3','4','2','3','4','1','3','4','1','2','4','1','2','3'),
+                    Treatment   =c('A','B','C','D','A','B','C','D','A','B','C','D','A','B','C','D'),
+                    Radon_before=c(4.04,3.93,7.64,6.97,3.84,4.83,7.11,4.16,3.82,7.05,4.09,4.17,7.84,5.03,4.58,5.19),
+                    Radon_after =c(6.46,2.62,9.87,6.29,6.78,2.85,6.77,4.65,6.2,6.87,5.54,2.7,11.2,5.56,2.9,3.28))
+        
+p2B <- ggplot(data=Radon, aes(x=Radon_before, xend=Radon_after, y=Treatment, group=Treatment))+
+  geom_dumbbell(colour="grey", colour_xend ="red", size=4.0, dot_guide = TRUE, dot_guide_size = 0.05, dot_guide_colour = "grey")+
+  labs(x="Radon level")+
+  facet_wrap(~ Group)
+p2B
+
+#ref: https://www.r-bloggers.com/2021/08/ggalt-make-a-dumbbell-plot-to-visualize-change-in-ggplot2/
+```
+***
+
+#Tree maps
+```{r tree-maps}
+
+#basic
+data(survey)
+table(survey$Sex, survey$W.Hnd)
+survey_sum <-data.frame(Hand =c("Left", "Right", "Left", "Right"),
+                        Sex  =c("Female", "Female", "Male", "Male"),
+                       Count =c(7, 110, 10, 108))
+
+p3A <- ggplot(data=survey_sum,aes(area=Count,fill=Sex,
+                                 label=Hand, subgroup=Sex))+
+  geom_treemap()+
+  geom_treemap_text(place="centre", size=12)
+p3A
+
+#----------------
+
+#exciting
+shark_sum <- data.frame(Superorder=c(rep("Galeomorphi", 4), rep("Squalomorphi",4)),
+                        Order=c("Heterodontiformes", "Orectolobiformes", "Carcharhiniformes", "Lamniformes",
+                                  "Hexanchiformes", "Squatiniformes", "Pristiophoriformes", "Squaliformes"),
+                        Count=c(9, 34, 270, 17, 6, 18, 9, 113))
+
+p3B <- ggplot(data=shark_sum,aes(area=Count,fill=Order,
+                                 label=Order, subgroup=Superorder))+
+  geom_treemap()+
+  geom_treemap_text(place="centre", size=12)+
+  geom_treemap_subgroup_text(colour="white",place = "bottomleft", padding.y=grid::unit(2, "mm"))+
+  geom_treemap_subgroup_border(colour="black")
+p3B
+
+
+#Ref: https://www.geeksforgeeks.org/treemap-with-ggplot2-and-treemapify-in-r/
+
+```
+***
+
+#Waffle plots
+```{r waffles}
+
+#basic 
+research_ds <- data.frame(Status=c("R1", "R2", "RCU"),
+                          States=c(187, 139, 216))
+
+p4A <- waffle(research_ds, rows=20, colors=c("green","yellow","orange"))
+p4A
+
+#----------------
+
+#exciting
+arthropod_ds <- data.frame(
+  SubPhylum =c(rep("Myriapoda",4), rep("Chelicerata",3), rep("Crustacea",10), rep("Hexapoda",2) ),
+  Class_N     =c("Chilopoda","Diplopoda","Pauropoda","Symphyla",
+               "Xiphosura", "Pycnognida", "Arachnida",
+               "Malocostraca", "Copepoda", "Ostracoda", "Thecostraca", "Branchiopoda", "Ichthyostraca", "Tantulocarida", "Remipedia",  "Mystacocarida", "Cephalocarida",
+               "Entognatha", "Insecta"),
+  Class_C   =c("A", "B", "C", "D",
+               "A", "B", "C",
+               "A", "B", "C", "D", "E", "F" ,"G", "H", "I", "J",
+               "A", "B"),
+  Order_Num =c(5, 16, 2, 1,
+               1, 1, 12,
+               16, 10, 5, 10, 9, 5, 1, 1, 1, 1,
+               6, 28))
+  
+p4B <- ggplot(data=arthropod_ds, aes(fill=Class_C, values=Order_Num))+
+  geom_waffle(color="white", sixe=1.5, n_rows=3)+
+  facet_wrap(~SubPhylum, ncol=1)+
+  theme_void()
+p4B
+```
+***
+
+#Dendrograms
+```{r dendrograms}
+
+#basic
+d_arrests <- dist(USArrests)
+hc_arrests <-hclust(d_arrests, method="complete")
+
+par(cex=0.8)
+p5A <- plot(hc_arrests)
+p5A
+par(cex=1.0)
+
+#----------------
+
+#exciting
+data(bird.orders)
+typeof(bird.orders)
+
+bird_col <- c(rep("blue",5), "black", "black", rep("red",5),
+              "black", "black", "black", rep("green",4), rep("purple",4))
+bird_cex <- c(rep(0.8,22), 1.2)
+bird_ew  <- c( 3.0  , rep(2.0    ,3), 3.0  , 3.0  , 2.0   , 3.0  , rep(2.0,   ,36))
+bird_ec  <- c("gold", rep("black",3),"gold","gold","black","gold", rep("black",36))
+
+p5B<- plot(bird.orders, tip.color  = bird_col,
+                  cex        = bird_cex,
+                  edge.width = bird_ew,
+                  edge.color = bird_ec)
+p5B
+
+#refs: https://cran.r-project.org/web/packages/dendextend/vignettes/Cluster_Analysis.html
+#      https://r-charts.com/part-whole/hclust/
+#      https://cran.r-project.org/web/packages/ape/vignettes/DrawingPhylogenies.pdf
+```
+***
+
+#Heatmaps
+```{r heatmaps}
+
+#basic
+iris.m <- as.matrix(iris[,0:4])
+
+p6A <-heatmap(iris.m, scale="column", cexCol=0.8, 
+             RowSideColors = rainbow(3)[iris$Species])
+p6A
+
+#----------------
+
+#exciting
+data(carnivora)
+head(carnivora)
+
+length(carnivora$FW) #112
+carnivora2 <- na.exclude(carnivora[,1:11])
+length(carnivora2$FW) #91
+
+carnivora.m <- as.matrix(carnivora2[,6:11])
+
+p6B <-heatmap(carnivora.m, scale="column", cexCol=0.7,
+             RowSideColors = rainbow(2)[carnivora2$SuperFamily],
+             labCol=c("Fem Body Wt", "Body Wt", "Fem Brain Wt",
+                      "Brain Wt", "Litter Size", "Gestation Len"))
+p6B
+
+p6C <-pheatmap(carnivora.m, scale = "column",
+  clustering_method = "average", # average linkage
+  annotation_row = carnivora2[, 2, drop = FALSE], 
+  show_rownames = FALSE,
+  labels_col=c("Fem Body Wt", "Body Wt", "Fem Brain Wt",
+                "Brain Wt", "Litter Size", "Gestation Len"))
+p6C
+
+
+#ref: https://gexijin.github.io/learnR/visualizing-the-iris-flower-data-set.html
+```
+***
+
+#Kaplan Meier Curves
+```{r KM-curves}
+
+#basic
+surv_mod1 <- survfit2(Surv(time, status) ~ 1, data = lung)
+
+p7A <-  ggsurvfit(surv_mod1) +
+  labs(x = "Days", y = "Survival Probability") + 
+  add_confidence_interval()
+p7A
+
+#----------------
+
+#exciting
+surv_mod2 <- survfit2(Surv(time, status) ~ celltype, data=veteran)
+
+p7B <- ggsurvfit(surv_mod2) +
+  labs(x = "Days", y = "Survival Probability") + 
+  add_confidence_interval()
+p7B
+
+#Refs: https://www.emilyzabor.com/survival-analysis-in-r.html
+#      https://www.themillerlab.io/posts/survival_analysis/
+```
+***
+
+#Time series
+```{r time-series}
+
+#basic
+data(AppleStock)
+
+AppleStock$Date <-as.Date(AppleStock$Date, format="%m/%d/%Y")
+
+p8A <- ggplot(AppleStock, aes(x=Date, y=Price))+
+  geom_line(linewidth=1.0)
+p8A
+
+#----------------
+
+#exciting
+Radon2<- data.frame(Treatment=c(rep("A",24), rep("B",24), rep("C",24), rep("D",24)),
+                    Hour=c(rep(seq(1:24),4)),
+                    Radon=c(1.59,1.59,2.57,2.38,2.86,3.65,2.89,1.62,2.03,1.89,2.27,2.81,1.73,2.70,3.46,3.16,2.89,2.68,3.68,3.16,3.27,3.59,3.84,3.57,
+                            2.16,2.65,2.84,2.84,2.43,2.62,3.57,2.22,2.70,2.89,3.08,3.57,3.51,2.84,2.84,3.62,3.30,3.62,3.41,3.89,3.70,3.30,4.00,3.86,
+                            0.95,0.78,1.65,1.54,2.49,2.19,2.05,1.49,1.76,1.27,1.38,1.76,1.95,1.27,2.24,2.59,2.19,2.57,2.05,2.05,2.78,2.78,2.70,2.08,
+                            2.38,2.49,2.05,2.24,2.24,2.57,1.49,1.86,1.76,1.70,2.19,2.84,3.24,3.22,3.22,3.35,2.92,2.65,3.32,2.92,2.86,3.05,3.41,3.35))
+
+p8B <- ggplot(Radon2, aes(x=Hour, y=Radon, group=Treatment))+
+  geom_line(aes(colour=Treatment), linewidth=1.0)
+p8B
+```
+***
+
+#Donut plots
+```{r donuts}
+
+#basic
+sci_fund <- data.frame(Institution=c("NIH", "NSF", "DOD"),
+                       Funding    =c(37, 7, 10))
+sci_fund$prop <- sci_fund$Funding / sum(sci_fund$Funding)
+sci_fund$ymax <- cumsum(sci_fund$prop)
+sci_fund$ymin <- c(0, head(sci_fund$ymax, n=-1))
+sci_fund$labelPosition <- (sci_fund$ymax + sci_fund$ymin) / 2
+
+p9A <- ggplot(data=sci_fund, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Institution))+
+  geom_rect()+
+  coord_polar(theta="y")+
+  xlim(c(2,4))+
+  geom_label(x=3.5, aes(y=labelPosition, label=Funding, size=6))+
+  theme_void()
+p9A
+
+#----------------
+
+#exciting
+genome_donut <- data.frame(seg   =c(rep(c('A','B','C','D'),4)),
+                          value  =c(50.0, 12.5, 12.5, 25.0, 
+                                    67.5, 7.5 , 7.5 , 17.5,
+                                    82.5, 5.0 , 5.0 ,  7.5,
+                                    90.0, 5.0,  5.0 ,  0.0),
+                        pattern=c(rep("Option_1",4),
+                                  rep("Option_2",4),
+                                  rep("Option_3",4),
+                                  rep("Option_4",4)))
+hsize <- 4
+
+genome_donut<- genome_donut %>%
+  mutate (x= hsize)
+
+p9B<- ggplot(genome_donut, aes(x = hsize, y = value, fill = seg)) +
+  coord_polar(theta = "y") +
+  xlim(c(0.2, hsize + 0.5))+
+  geom_col(color = "black", linewidth=1.25) +
+  scale_fill_manual(values = c("#C3C3C3","green","green","#C3C3C3"))+
+  facet_wrap(~ pattern, ncol=4)+
+  theme(panel.background = element_rect(fill="white"),
+        panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        legend.position ="none")
+p9B
+ 
+#ref: https://r-graph-gallery.com/128-ring-or-donut-plot.html
+```
+***
+
+#Funnel plots
+```{r funnels}
+
+#basic
+data(Olkin1995)
+
+Olkin2 <- metabin(ev.exp, n.exp, ev.cont, n.cont,
+   data = Olkin1995,
+   studlab = paste(author, year),
+   sm = "RR", method = "I")
+
+p10A <-funnel(Olkin2)
+p10A
+
+#----------------
+
+#exciting
+data(caffeine)
+
+caffeine2 <- metabin(h.caf, n.caf, h.decaf, n.decaf, sm = "OR",
+  data = caffeine, studlab = paste(study, year))
+
+p10B <-funnel(caffeine2, common = TRUE,
+  level = 0.95, contour = c(0.9, 0.95, 0.99),
+  col.contour = c("darkgreen", "green", "lightgreen"),
+  lwd = 2, cex = 1, pch = 18, studlab = TRUE, cex.studlab = 0.6) 
+  legend(0.10, 0.15, c("0.1 > p > 0.05", "0.05 > p > 0.01", "< 0.01"),
+  fill = c("darkgreen", "green", "lightgreen"))
+p10B
+
+#ref: https://cran.r-project.org/web/packages/meta/vignettes/meta-tutorial.pdf
+```
+***
+
+#Bonus 
+```{r bonus}
+
+#Stacked Barpots
+crustacean_ds <- data.frame(
+  PClass  =rep(c("Malocostraca", "Copepoda", "Ostracoda", "Thecostraca", "Branchiopoda",
+                 "Ichthyostraca", "Tantulocarida", "Remipedia",  "Mystacocarida", "Cephalocarida"),3),
+  Sample  =c(rep("Station_A",10), rep("Station_B",10), rep("Station_C",10)),  
+  Counts  =c(99,23,18,23,3,1,0,0,1,0,
+             45,48,45,11,0,0,0,2,0,0,
+             120,78,29,8, 6,0,0,0,0,0))
+
+crustacean_ds %>% 
+  group_by(Sample) %>%       
+  summarise(sum=sum(Counts))
+#Station_A	168			Station_B	151			Station_C	241	
+
+crustacean_ds$Sums <- c(rep(168,10),rep(151,10),rep(241,10))
+crustacean_ds$Percents <- crustacean_ds$Counts/crustacean_ds$Sums
+
+
+pB1 <- ggplot(data=crustacean_ds, aes(x=Sample, y=Counts, fill=PClass))+ 
+    geom_bar(aes(), stat="identity", position="stack")
+pB1
+
+pB2 <- ggplot(data=crustacean_ds, aes(x=Sample, y=Percents, fill=PClass))+ 
+    geom_bar(aes(), stat="identity", position="stack")
+pB2
+
+
+#Dot + Boxplots
+diamonds2 <- diamonds[diamonds$carat>2.5,]
+
+pB3 <- ggplot(data=diamonds2, aes(y=carat, x=cut, fill=cut))+
+  geom_boxplot()+
+  geom_point(aes(color=price),cex=2.5, pch=18, position=position_jitterdodge())+
+  scale_fill_manual(values=c("yellow","green","#CD7F32","#C0C0C0","#D4AF37"))+
+  scale_colour_gradient(low = "green", high = "red")
+pB3
+
+
+#Multi-level Regression Plots 
+
+pB4<- ggplot(data=Radon2, aes(x=Hour, y=Radon, group=Treatment)) +
+  geom_point(aes(color=Treatment))+
+  geom_smooth(method='lm', formula='y~x', se=T, aes(colour=Treatment))
+pB4
+
+Test_Radon <-data.frame(Treatment=c(rep("A",10),rep("B",10),rep("C",10),rep("D",10)),
+                        Hour=rep(c(1,2,3,4,5,6,7,8,9,10),4),
+                        Radon=c(1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 5.6, 7.0, 9.9, 9.8,
+                                5.0, 5.1, 5.3, 5.8, 4.3, 4.0, 5.0, 5.2, 5.3, 4.9,
+                                1.0, 1.0, 0.9, 1.1, 1.5, 2.0, 2.2, 3.0, 2.8, 4.0,
+                                8.5, 8.6, 7.4, 7.3, 7.1, 7.2, 6.3, 5.5, 4.0, 2.1))
+
+pB5 <-ggplot(data=Test_Radon, aes(x=Hour, y=Radon, group=Treatment)) +
+  geom_point(aes(color=Treatment))+
+  geom_smooth(method='lm', formula='y~x', se=T, aes(colour=Treatment))
+pB5
+```
+***
