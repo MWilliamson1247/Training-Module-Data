@@ -8,33 +8,17 @@ library(ggfortify)
 library(kmed)
 library(lme4)
 library(ggsurvfit)
+#################################################################
 
-
-#Mock Graphs
-
-km_trt_fit <- survfit(Surv(time, status) ~ trt, data=veteran)
-autoplot(km_trt_fit)
-
-# recode heart_disease into 2 classes
-heart$heart_disease <- ifelse(heart$class == 0,
-                            0,
-                            1)
-ggplot(data=heart, aes(x=age, y=heart_disease))+
-  geom_point()+
-  geom_smooth(method = "glm", method.args = list(family = binomial)) 
 
 #Dataset Creation
 
-setwd("C:/Users/Mark.Williamson.2/Desktop/Williamson Data/R/R_data")
+setwd("C:/Users/...") # <- you will need to fill this in yourself after downloading and saving LvS_dataset.csv
 
 lds <- read.csv("LvS_dataset.csv")
 
-#Popped is coded in a non-standard way
-#Typically you will see 1=event, 0=censored. 
-#We will re-code it
-
-lds$Popped_f <-as.factor(lds$Popped)
-table(lds$Popped_f)
+lds$Popped_f <-as.factor(lds$Popped) #Use a factor variable for logistic regression
+table(lds$Popped_f) 
 
 lds$Color <-as.factor(lds$Color)
 lds$Color <- relevel(lds$Color, ref = "Red")
@@ -46,8 +30,7 @@ lds %>%
   group_by(Popped) %>%
   summarise(mean  = mean(Size),
             sd    = sd(Size))
-
-
+#################################################################
 
 
 #LOGISTIC REGRESSION: SIMPLE CATEGORICAL
@@ -72,6 +55,8 @@ ggplot(l_cat_graph, aes(x=OR, y=Label)) +
   labs(y="Color Comparisons", x="Odds Ratio")+
   scale_x_continuous(limits=c(0,2))+
   theme_bw()
+#################################################################
+
 
 #SURVIVAL ANALYSIS: SIMPLE CATEGORICAL
 
@@ -81,7 +66,8 @@ summary(survival_cat)
 survfit2(Surv(Time, Popped) ~ Color, data=lds) |>
   ggsurvfit()
 
-cox.zph(survival_cat) #significant, fits assumption
+cox.zph(survival_cat) #not-significant, fits assumption
+#################################################################
 
 
 #LOGISTIC REGRESSION: SIMPLE NUMERICAL
@@ -91,13 +77,16 @@ summary(logistic_num) #Significant
 ggplot(data=lds, aes(x=Size, y=Popped))+
   geom_point()+
   geom_smooth(method = "glm", method.args = list(family = binomial)) 
+#################################################################
 
 
 #SURVIVAL ANALYSIS: SIMPLE NUMERICAL
 survival_num <-coxph(Surv(Time, Popped) ~ Size, data=lds)
 summary(survival_num) #Significant
 
-cox.zph(survival_num)
+cox.zph(survival_num) #not-significant, fits assumption
+#################################################################
+
 
 #LOGISTIC REGRESSION: MULTIPLE PREDICTORS
 logistic_mult <-glm(Popped_f ~ Color + String + Icon + Size + Height, 
@@ -107,11 +96,13 @@ summary(logistic_mult) #Color, Size, significant
 exp_coef <- exp(coef(logistic_mult))
 exp_ci   <- exp(confint(logistic_mult))
 cbind(Odds_Ratio = exp_coef, exp_ci)
+#################################################################
+
 
 #SURVIVAL ANALYSIS: MULTIPLE PREDICTORS
 survival_mult <-coxph(Surv(Time, Popped) ~ Color + String + Icon + Size + Height,
                      data=lds)
 summary(survival_mult) #Significant
 
-cox.zph(survival_mult)
+cox.zph(survival_mult) #not-significant, fits assumption
 
